@@ -1,0 +1,420 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Mic, MicOff, ChevronRight, ChevronLeft, Volume2, User, Info, MessageSquare, Target, Zap, RotateCcw, PlayCircle, Command, Sparkles, Share2, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
+
+const apiKey = "AIzaSyBuUSWvVTw6lskBPO26gkV15KmLUs7SjI4"; // Provided by environment
+const TEXT_MODEL = "gemini-2.5-flash-preview-09-2025";
+const IMAGE_MODEL = "imagen-4.0-generate-001";
+const TTS_MODEL = "gemini-2.5-flash-preview-tts";
+
+const App = () => {
+  const [currentSegment, setCurrentSegment] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [performanceMode, setPerformanceMode] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [aiReport, setAiReport] = useState(null);
+  const [isGeneratingExtra, setIsGeneratingExtra] = useState(false);
+  const [podcastThumbnail, setPodcastThumbnail] = useState(null);
+  
+  const audioRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  // Initialize Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event) => {
+        let currentTranscript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          currentTranscript += event.results[i][0].transcript;
+        }
+        setTranscript(currentTranscript);
+      };
+
+      recognitionRef.current.onend = () => setIsRecording(false);
+      recognitionRef.current.onerror = () => setIsRecording(false);
+    }
+  }, []);
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      if (transcript.trim()) {
+        callGemini(transcript);
+        setTranscript("");
+      }
+    } else {
+      setTranscript("");
+      try {
+        recognitionRef.current?.start();
+        setIsRecording(true);
+      } catch (err) { console.error(err); }
+    }
+  };
+
+  const segments = [
+    { title: "Opening & Introductions", time: "0-8 min", goals: "Warm, welcoming. Establish Cognite and guests.", cueCards: ["Welcome to The Link...", "Introduce Bill Owen (CSO)", "Introduce Guru (MD India)", "Establish 'Shared Universe'"], questions: ["Q1: Simplest description of Cognite?", "Q2 (Bill): Why Cognite after 30 years?", "Q3 (Guru): The thread from Hyundai to AI?"] },
+    { title: "AI in Manufacturing", time: "8-23 min", goals: "Meaty technical segment. Focus on ROI and impact.", cueCards: ["465% ROI (Forrester)", "7-week deployment time", "Industrial DataOps concept"], questions: ["Q4: What's holding companies back?", "Q5: How to hit impact in 7 weeks?", "Q6: Predict vs Act (Atlas AI)"] },
+    { title: "Technology Services", time: "23-35 min", goals: "Strategic for Smartlinks. Partner ecosystem focus.", cueCards: ["SI Partner Profile", "Managed Services vs Software", "Deployment failure modes"], questions: ["Q9: Where do deployments go wrong?", "Q12: What does a good partner look like?"] },
+    { title: "India: Innovation Hub", time: "35-50 min", goals: "Bengaluru CoE. India as global innovation engine.", cueCards: ["100+ specialists in Bengaluru", "Raisina Dialogue context", "Bridge between tech/silos"], questions: ["Q13: Why Bengaluru CoE?", "Q14: AI as the bridge?"] },
+    { title: "Supply Chain Thread", time: "50-57 min", goals: "The Blue Yonder shared history. OT vs Supply Chain.", cueCards: ["Shared Ancestry (BY)", "Resilience after pandemic", "PM GatiShakti"], questions: ["Q18: How Industrial AI changes SC?", "Q19: Can AI genuinely fix fragility?"] },
+    { title: "Closing & Vision", time: "57-60 min", goals: "Bold close. Actionable advice.", cueCards: ["5-year factory vision", "Advice for leaders", "Personal Callback"], questions: ["Q21: Paint the 5-year picture.", "Q22: Final piece of advice."] }
+  ];
+
+  // Helper for Gemini Text Calls with Backoff
+  const geminiFetch = async (prompt, systemPrompt = "", retryCount = 0) => {
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${TEXT_MODEL}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          systemInstruction: systemPrompt ? { parts: [{ text: systemPrompt }] } : undefined
+        })
+      });
+      if (!response.ok && retryCount < 5) {
+        const delay = Math.pow(2, retryCount) * 1000;
+        await new Promise(r => setTimeout(r, delay));
+        return geminiFetch(prompt, systemPrompt, retryCount + 1);
+      }
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text;
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+  };
+
+  const callGemini = async (userText) => {
+    setIsProcessing(true);
+    const systemPrompt = `You are roleplaying GURU and BILL on 'The Link' podcast. Follow-up strictly with the Four-Part Response: 1. GUEST ANSWERS, 2. PACING NOTE, 3. PROBE SUGGESTION, 4. HOST COACHING. Current Segment: ${segments[currentSegment].title}.`;
+    
+    const result = await geminiFetch(`Host says: ${userText}`, systemPrompt);
+    if (result) {
+      setChatHistory(prev => [...prev, { role: 'host', text: userText }, { role: 'coach', text: result }]);
+      const dialogue = result.split("2. PACING NOTE")[0].replace("1. GUEST ANSWER(S)", "").trim();
+      generateTTS(dialogue);
+    }
+    setIsProcessing(false);
+  };
+
+  // ✨ FEATURE: Generate Production Outro Script
+  const generateOutroSummary = async () => {
+    setIsGeneratingExtra(true);
+    const historyText = chatHistory.map(h => `${h.role === 'host' ? 'Heera' : 'Guests'}: ${h.text}`).join("\n");
+    const prompt = `Based on the following podcast transcript, draft a high-energy, 90-second outro script for the host (Heera). It MUST reference at least two specific points or quotes made by Bill or Guru during this rehearsal. Focus on the value of Industrial AI and Cognite's impact. \n\nTranscript:\n${historyText}`;
+    
+    const result = await geminiFetch(prompt);
+    if (result) setAiReport({ type: 'Outro Script', content: result });
+    setIsGeneratingExtra(false);
+  };
+
+  // ✨ FEATURE: Generate High-Impact Probes
+  const suggestSmartProbes = async () => {
+    if (chatHistory.length === 0) return;
+    setIsGeneratingExtra(true);
+    const lastResponse = chatHistory[chatHistory.length - 1].text;
+    const prompt = `Analyze this guest response and suggest 3 "hard-hitting" follow-up questions that probe deeper into the technical or business strategy mentioned. Format as a clean list. Response: ${lastResponse}`;
+    
+    const result = await geminiFetch(prompt);
+    if (result) setAiReport({ type: 'Smart Probes', content: result });
+    setIsGeneratingExtra(false);
+  };
+
+  // ✨ FEATURE: Create Social Media Kit
+  const createSocialKit = async () => {
+    setIsGeneratingExtra(true);
+    const historyText = chatHistory.map(h => `${h.role === 'host' ? 'Heera' : 'Guests'}: ${h.text}`).join("\n");
+    const prompt = `Create a compelling LinkedIn post draft to promote this podcast episode. Include a 'hook' sentence, 3 bullet points of what we discussed, and relevant hashtags (#IndustrialAI #Cognite #SupplyChain). Reference the guests Bill Owen and Guru Ananthanarayanan. Context:\n${historyText}`;
+    
+    const result = await geminiFetch(prompt);
+    if (result) setAiReport({ type: 'Social Media Kit', content: result });
+    setIsGeneratingExtra(false);
+  };
+
+  // ✨ FEATURE: Generate Episode Thumbnail Visual
+  const generateVisualTheme = async () => {
+    setIsGeneratingExtra(true);
+    const prompt = `A professional, cinematic podcast thumbnail for a show about Industrial AI and Supply Chain. High-tech factory floor in the background with glowing blue data streams, modern professional aesthetic, abstract technology connections. No text. 4k resolution.`;
+    
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${IMAGE_MODEL}:predict?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instances: { prompt }, parameters: { sampleCount: 1 } })
+      });
+      const result = await response.json();
+      if (result.predictions?.[0]?.bytesBase64Encoded) {
+        setPodcastThumbnail(`data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`);
+      }
+    } catch (error) { console.error(error); }
+    setIsGeneratingExtra(false);
+  };
+
+  const generateTTS = async (text) => {
+    const isBill = text.includes("🔵 Bill");
+    const voice = isBill ? "Charon" : "Kore";
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${TTS_MODEL}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `Speak in a natural, conversational podcast tone: ${text}` }] }],
+          generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } } }
+        })
+      });
+      const data = await response.json();
+      const pcmData = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (pcmData) {
+        const pcmBuffer = Uint8Array.from(atob(pcmData), c => c.charCodeAt(0)).buffer;
+        const wavHeader = new ArrayBuffer(44);
+        const view = new DataView(wavHeader);
+        const writeString = (offset, s) => { for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i)); };
+        writeString(0, 'RIFF'); view.setUint32(4, 36 + pcmBuffer.byteLength, true);
+        writeString(8, 'WAVE'); writeString(12, 'fmt ');
+        view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+        view.setUint32(24, 24000, true); view.setUint32(28, 48000, true);
+        view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+        writeString(36, 'data'); view.setUint32(40, pcmBuffer.byteLength, true);
+        const blob = new Blob([wavHeader, pcmBuffer], { type: 'audio/wav' });
+        setAudioUrl(URL.createObjectURL(blob));
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-[#020617] text-slate-100 font-sans overflow-hidden">
+      {/* Production Header */}
+      <header className="flex items-center justify-between px-8 py-4 bg-slate-900/60 border-b border-slate-800 backdrop-blur-2xl z-20">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <Target className="text-white w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="font-black text-lg tracking-tighter uppercase italic leading-none">The Link Studio</h1>
+            <div className="flex items-center gap-2 text-[9px] font-bold text-indigo-400 uppercase tracking-[0.2em] mt-1">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              </span>
+              AI Production Mode
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 bg-black/40 border border-slate-800 px-4 py-2 rounded-full">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Segment</span>
+            <span className="text-xs font-bold text-indigo-400">{currentSegment + 1} / 6</span>
+          </div>
+          <button 
+            onClick={() => setPerformanceMode(!performanceMode)}
+            className={`px-6 py-2 rounded-full text-[10px] font-black tracking-widest transition-all shadow-md ${
+              performanceMode ? 'bg-amber-500 text-black shadow-amber-500/20' : 'bg-slate-800 text-slate-400 border border-slate-700'
+            }`}
+          >
+            {performanceMode ? 'PERFORMANCE MODE' : 'COACHING ACTIVE'}
+          </button>
+        </div>
+      </header>
+
+      <main className="flex flex-1 overflow-hidden relative">
+        {/* Left: Script/iPad Side */}
+        <aside className="w-80 border-r border-slate-800 bg-[#0f172a] p-6 flex flex-col gap-6 overflow-y-auto">
+          <div className="space-y-1">
+            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <Zap size={14} className="text-amber-500" /> Episode Goals
+            </h2>
+            <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl shadow-inner">
+              <h3 className="font-bold text-sm mb-2 text-white">{segments[currentSegment].title}</h3>
+              <p className="text-xs text-slate-400 leading-relaxed italic">"{segments[currentSegment].goals}"</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+             <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+              <MessageSquare size={14} className="text-indigo-500" /> iPad Cue Cards
+            </h2>
+            {segments[currentSegment].cueCards.map((card, i) => (
+              <div key={i} className="p-4 bg-slate-800/40 rounded-xl border border-slate-700/50 text-xs font-medium text-slate-300 transition-all hover:bg-slate-800">
+                {card}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-auto pt-6 flex justify-between gap-4">
+             <button onClick={() => setCurrentSegment(Math.max(0, currentSegment - 1))} className="flex-1 p-3 bg-slate-800 hover:bg-slate-700 rounded-xl transition-all flex justify-center"><ChevronLeft size={18} /></button>
+             <button onClick={() => setCurrentSegment(Math.min(segments.length - 1, currentSegment + 1))} className="flex-1 p-3 bg-slate-800 hover:bg-slate-700 rounded-xl transition-all flex justify-center"><ChevronRight size={18} /></button>
+          </div>
+        </aside>
+
+        {/* Center: Rehearsal Area */}
+        <section className="flex-1 flex flex-col bg-black relative">
+          <div className="flex-1 overflow-y-auto p-12 space-y-10 scroll-smooth">
+            {chatHistory.length === 0 && !podcastThumbnail && (
+              <div className="h-full flex flex-col items-center justify-center text-center opacity-80">
+                <div className="w-24 h-24 bg-indigo-600 rounded-full flex items-center justify-center mb-8 shadow-2xl shadow-indigo-500/40">
+                  <Mic size={40} className="text-white" />
+                </div>
+                <h2 className="text-3xl font-black mb-4 tracking-tighter">STUDIO IS LIVE</h2>
+                <p className="text-slate-400 max-w-sm mx-auto text-sm leading-relaxed mb-6">
+                  Guru and Bill are ready. <br />Use the mic or click a prompt below to start.
+                </p>
+                <button onClick={generateVisualTheme} className="flex items-center gap-2 px-4 py-2 bg-slate-800 rounded-full text-xs font-bold hover:bg-slate-700 transition-colors">
+                  <ImageIcon size={14} className="text-indigo-400" /> Generate ✨ Visual Theme
+                </button>
+              </div>
+            )}
+
+            {podcastThumbnail && chatHistory.length === 0 && (
+              <div className="h-full flex flex-col items-center justify-center text-center relative p-8">
+                <img src={podcastThumbnail} className="max-w-md rounded-3xl shadow-2xl border border-slate-800 mb-8" alt="Podcast Theme" />
+                <p className="text-xs text-slate-500 uppercase font-black tracking-widest">Visual Atmosphere Generated</p>
+                <button onClick={() => setPodcastThumbnail(null)} className="mt-4 text-xs text-slate-400 hover:text-white">Reset Visual</button>
+              </div>
+            )}
+
+            {chatHistory.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'host' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-2xl w-full ${msg.role === 'host' ? 'text-right' : 'text-left'}`}>
+                  <div className={`inline-block p-6 rounded-3xl ${
+                    msg.role === 'host' 
+                    ? 'bg-indigo-600 text-white rounded-tr-none shadow-xl' 
+                    : 'bg-slate-900/80 border border-slate-800 text-slate-200 rounded-tl-none backdrop-blur-sm'
+                  }`}>
+                    <div className="text-[9px] uppercase font-black tracking-widest mb-3 opacity-60">
+                      {msg.role === 'host' ? '🎤 HOST (HEERA)' : '🎭 ROLEPLAY & COACH'}
+                    </div>
+                    <div className="text-[15px] leading-relaxed whitespace-pre-wrap font-medium">
+                      {msg.text}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {(isProcessing || isGeneratingExtra) && (
+              <div className="flex justify-start">
+                <div className="bg-slate-900 p-6 rounded-3xl rounded-tl-none border border-slate-800 flex items-center gap-4">
+                  <Loader2 className="animate-spin text-indigo-500" size={20} />
+                  <span className="text-[10px] font-black text-slate-500 tracking-widest uppercase">
+                    {isGeneratingExtra ? '✨ AI ANALYSIS IN PROGRESS...' : 'RECORDING RESPONSE...'}
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {isRecording && (
+              <div className="flex justify-end">
+                <div className="bg-red-500/10 border border-red-500/30 p-6 rounded-3xl rounded-tr-none flex items-center gap-4 max-w-md">
+                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                   <p className="text-sm font-medium text-red-200 italic">
+                     "{transcript || "Listening to your question..."}"
+                   </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <audio ref={audioRef} src={audioUrl} autoPlay />
+
+          {/* Interaction Bar */}
+          <div className="p-8 bg-gradient-to-t from-black via-slate-950/80 to-transparent border-t border-slate-900/50 backdrop-blur-md">
+            <div className="max-w-4xl mx-auto flex flex-col items-center gap-8">
+              
+              <div className="flex items-center gap-12">
+                 <div className="flex flex-col items-center gap-2">
+                    <button onClick={suggestSmartProbes} className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center hover:bg-slate-700 transition-all text-indigo-400"><Sparkles size={20}/></button>
+                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">✨ Probes</span>
+                 </div>
+
+                 <button 
+                  onClick={toggleRecording}
+                  className={`w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-2xl relative ${
+                    isRecording ? 'bg-red-500 scale-110 shadow-red-500/40' : 'bg-indigo-600 hover:scale-105 shadow-indigo-600/40'
+                  }`}
+                >
+                  {isRecording ? <MicOff size={32} /> : <Mic size={32} />}
+                  {isRecording && <span className="absolute inset-0 rounded-full border-4 border-red-400 animate-ping opacity-20" />}
+                </button>
+
+                 <div className="flex flex-col items-center gap-2">
+                    <button onClick={generateOutroSummary} className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center hover:bg-slate-700 transition-all text-indigo-400"><FileText size={20}/></button>
+                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">✨ Outro</span>
+                 </div>
+              </div>
+
+              <div className="w-full flex justify-center gap-4">
+                 <button onClick={createSocialKit} className="bg-slate-900/60 hover:bg-indigo-900/20 px-6 py-3 rounded-2xl border border-slate-800 flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-all hover:text-indigo-200">
+                    <Share2 size={14}/> ✨ Social Kit
+                 </button>
+                 <button onClick={() => setChatHistory([])} className="bg-slate-900/60 hover:bg-slate-800 px-6 py-3 rounded-2xl border border-slate-800 flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <RotateCcw size={14}/> Reset Studio
+                 </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Right: AI Insights Panel */}
+        <aside className="w-80 border-l border-slate-800 bg-[#0f172a] p-8 space-y-10 overflow-y-auto">
+          <div>
+            <h2 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+              <Sparkles size={14} /> Production Lab
+            </h2>
+            
+            <div className="space-y-6">
+              {!aiReport ? (
+                <div className="p-5 bg-slate-900/40 border border-slate-800 rounded-2xl text-center">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-2">No Insight Generated</p>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Click the ✨ icons in the bottom bar to generate production scripts, probes, or social posts based on your conversation.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-5 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl animate-in fade-in slide-in-from-bottom-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-[10px] font-black text-indigo-400 uppercase">{aiReport.type}</p>
+                    <button onClick={() => setAiReport(null)} className="text-slate-500 hover:text-white"><RotateCcw size={12}/></button>
+                  </div>
+                  <div className="text-[13px] text-slate-200 leading-relaxed whitespace-pre-wrap font-medium h-96 overflow-y-auto pr-2 custom-scrollbar">
+                    {aiReport.content}
+                  </div>
+                </div>
+              )}
+
+              <div className="p-5 bg-slate-900 rounded-2xl border border-slate-800">
+                  <h3 className="text-[9px] font-black text-slate-500 uppercase mb-4 tracking-widest">Guest Voice Activity</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                       <span className="text-[10px] font-bold text-slate-300">Bill (Global)</span>
+                       <div className={`w-2 h-2 rounded-full ${audioUrl && !isProcessing ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]' : 'bg-slate-700'}`} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                       <span className="text-[10px] font-bold text-slate-300">Guru (India)</span>
+                       <div className={`w-2 h-2 rounded-full ${audioUrl && isProcessing ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]' : 'bg-slate-700'}`} />
+                    </div>
+                  </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </main>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+      `}</style>
+    </div>
+  );
+};
+
+export default App;
