@@ -1,1214 +1,190 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Podcast Roleplay Studio — Cognite</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500&family=DM+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg: #0C0B08;
-  --surface: #161410;
-  --surface2: #1E1C17;
-  --surface3: #26231C;
-  --amber: #F0A830;
-  --amber-soft: rgba(240,168,48,0.13);
-  --amber-border: rgba(240,168,48,0.22);
-  --teal: #2BC4A2;
-  --teal-soft: rgba(43,196,162,0.1);
-  --teal-border: rgba(43,196,162,0.25);
-  --blue: #52A8E8;
-  --blue-soft: rgba(82,168,232,0.1);
-  --blue-border: rgba(82,168,232,0.22);
-  --red: #E05858;
-  --red-soft: rgba(224,88,88,0.12);
-  --border: rgba(255,255,255,0.07);
-  --border-med: rgba(255,255,255,0.12);
-  --text: #EAE5D8;
-  --text-2: #9E9888;
-  --text-3: #58554C;
-  --radius: 10px;
-  --radius-lg: 14px;
-  --font: 'DM Sans', sans-serif;
-  --font-d: 'Fraunces', serif;
-  --font-m: 'IBM Plex Mono', monospace;
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; overflow: hidden; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 14px;
-  line-height: 1.65;
-  display: flex;
-  flex-direction: column;
-}
+import React, { useState } from 'react';
+import { AlertTriangle, TrendingUp, Target, FileText, Download, UserCheck, Zap, Info } from 'lucide-react';
 
-/* ─── TOPBAR ─── */
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  height: 52px;
-  border-bottom: 0.5px solid var(--border);
-  flex-shrink: 0;
-  gap: 12px;
-}
-.logo {
-  font-family: var(--font-d);
-  font-size: 17px;
-  font-weight: 300;
-  color: var(--amber);
-  white-space: nowrap;
-}
-.logo em { color: var(--text-3); font-style: normal; }
-.topbar-mid { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center; }
-.seg-chip {
-  font-family: var(--font-m);
-  font-size: 10px;
-  color: var(--amber);
-  background: var(--amber-soft);
-  border: 0.5px solid var(--amber-border);
-  padding: 3px 10px;
-  border-radius: 20px;
-  white-space: nowrap;
-}
-.mode-chip {
-  font-family: var(--font-m);
-  font-size: 10px;
-  padding: 3px 9px;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 0.5px solid var(--border-med);
-  color: var(--text-3);
-  background: var(--surface2);
-  white-space: nowrap;
-}
-.mode-chip.on { color: var(--amber); background: var(--amber-soft); border-color: var(--amber-border); }
-.topbar-right { display: flex; align-items: center; gap: 8px; }
-.tok { font-family: var(--font-m); font-size: 10px; color: var(--text-3); white-space: nowrap; }
-.tbtn {
-  background: none;
-  border: 0.5px solid var(--border);
-  color: var(--text-2);
-  cursor: pointer;
-  padding: 5px 11px;
-  border-radius: var(--radius);
-  font-size: 12px;
-  font-family: var(--font);
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-.tbtn:hover { border-color: var(--border-med); color: var(--text); }
+const App = () => {
+  const [showTip, setShowTip] = useState(false);
 
-/* ─── MAIN ─── */
-.main { display: flex; flex: 1; overflow: hidden; }
-
-/* ─── CONVERSATION ─── */
-.conv { flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 0.5px solid var(--border); }
-.scroll {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  scroll-behavior: smooth;
-}
-.scroll::-webkit-scrollbar { width: 3px; }
-.scroll::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
-
-/* WELCOME */
-.welcome {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 48px 24px;
-  gap: 14px;
-  color: var(--text-2);
-}
-.welcome-icon { font-size: 40px; margin-bottom: 4px; }
-.welcome h2 {
-  font-family: var(--font-d);
-  font-size: 26px;
-  font-weight: 300;
-  color: var(--amber);
-  line-height: 1.25;
-}
-.welcome p { font-size: 13px; max-width: 340px; line-height: 1.7; }
-.welcome-cmds {
-  font-family: var(--font-m);
-  font-size: 10px;
-  color: var(--text-3);
-  margin-top: 4px;
-  letter-spacing: 0.03em;
-}
-
-/* MESSAGES */
-.msg { display: flex; gap: 10px; align-items: flex-start; }
-.msg.host { flex-direction: row-reverse; }
-.av {
-  width: 30px; height: 30px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-m); font-size: 9px; font-weight: 500;
-  flex-shrink: 0; margin-top: 2px;
-}
-.av.host { background: var(--surface3); color: var(--text-3); border: 0.5px solid var(--border-med); }
-.av.guru { background: var(--teal-soft); color: var(--teal); border: 0.5px solid var(--teal-border); }
-.av.bill { background: var(--blue-soft); color: var(--blue); border: 0.5px solid var(--blue-border); }
-.bubble {
-  max-width: 74%;
-  background: var(--surface);
-  border: 0.5px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 11px 15px;
-}
-.bubble.host { background: var(--surface2); }
-.bubble.guru { border-color: var(--teal-border); }
-.bubble.bill { border-color: var(--blue-border); }
-.slabel {
-  font-family: var(--font-m);
-  font-size: 9px;
-  font-weight: 500;
-  margin-bottom: 5px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.slabel.host { color: var(--text-3); }
-.slabel.guru { color: var(--teal); }
-.slabel.bill { color: var(--blue); }
-.btext { font-size: 13.5px; line-height: 1.7; color: var(--text); }
-
-/* WAVE ANIMATION */
-.wave {
-  display: inline-flex;
-  gap: 2px;
-  align-items: flex-end;
-  height: 12px;
-  margin-left: 6px;
-  vertical-align: middle;
-}
-.wave span {
-  width: 2px;
-  background: var(--amber);
-  border-radius: 1px;
-  animation: wv 0.7s ease-in-out infinite;
-}
-.wave span:nth-child(1) { height: 3px; animation-delay: 0s; }
-.wave span:nth-child(2) { height: 7px; animation-delay: 0.1s; }
-.wave span:nth-child(3) { height: 11px; animation-delay: 0.2s; }
-.wave span:nth-child(4) { height: 7px; animation-delay: 0.3s; }
-.wave span:nth-child(5) { height: 3px; animation-delay: 0.4s; }
-@keyframes wv { 0%,100%{transform:scaleY(0.3)} 50%{transform:scaleY(1)} }
-
-/* COACHING CALLOUTS */
-.coach-callout {
-  margin-left: 40px;
-  background: rgba(240,168,48,0.06);
-  border: 0.5px solid rgba(240,168,48,0.2);
-  border-radius: var(--radius);
-  padding: 9px 13px;
-  font-size: 12px;
-  color: var(--text-2);
-  line-height: 1.55;
-}
-.coach-callout .clabel {
-  font-family: var(--font-m);
-  font-size: 9px;
-  color: var(--amber);
-  display: block;
-  margin-bottom: 3px;
-}
-.probe-callout {
-  margin-left: 40px;
-  background: rgba(43,196,162,0.05);
-  border: 0.5px solid rgba(43,196,162,0.2);
-  border-radius: var(--radius);
-  padding: 9px 13px;
-  font-size: 12px;
-  color: var(--text-2);
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-}
-.probe-callout:hover { background: rgba(43,196,162,0.1); }
-.probe-callout .plabel {
-  font-family: var(--font-m);
-  font-size: 9px;
-  color: var(--teal);
-  display: block;
-  margin-bottom: 3px;
-}
-
-/* PROCESSING DOTS */
-.dots { display: flex; gap: 4px; align-items: center; }
-.dots span {
-  width: 5px; height: 5px; border-radius: 50%;
-  background: var(--amber);
-  animation: dp 0.9s ease-in-out infinite;
-}
-.dots span:nth-child(2) { animation-delay: 0.15s; }
-.dots span:nth-child(3) { animation-delay: 0.3s; }
-@keyframes dp { 0%,100%{opacity:.3;transform:scale(.7)} 50%{opacity:1;transform:scale(1)} }
-
-/* ─── INPUT BAR ─── */
-.inputbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 20px;
-  border-top: 0.5px solid var(--border);
-  background: var(--surface);
-  flex-shrink: 0;
-}
-.mic {
-  width: 44px; height: 44px; border-radius: 50%;
-  background: var(--surface2);
-  border: 1.5px solid var(--border-med);
-  color: var(--amber);
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 17px;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-.mic:hover { background: var(--amber-soft); border-color: var(--amber); }
-.mic.rec {
-  background: var(--red-soft);
-  border-color: var(--red);
-  color: var(--red);
-  animation: pulse 1.2s ease-in-out infinite;
-}
-@keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(224,88,88,.3)} 50%{box-shadow:0 0 0 8px rgba(224,88,88,0)} }
-.textbox {
-  flex: 1;
-  background: var(--surface2);
-  border: 0.5px solid var(--border);
-  border-radius: 22px;
-  padding: 9px 16px;
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 13.5px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.textbox:focus { border-color: var(--border-med); }
-.textbox::placeholder { color: var(--text-3); }
-.stat { font-family: var(--font-m); font-size: 10px; color: var(--text-3); min-width: 72px; text-align: center; }
-.stopbtn {
-  width: 34px; height: 34px; border-radius: 50%;
-  border: 0.5px solid var(--border);
-  background: none; color: var(--text-3);
-  cursor: pointer; font-size: 11px;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s; flex-shrink: 0;
-}
-.stopbtn:hover { border-color: var(--red); color: var(--red); }
-.sendbtn {
-  width: 34px; height: 34px; border-radius: 50%;
-  background: var(--amber); border: none;
-  color: #0C0B08; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; transition: all 0.15s; flex-shrink: 0;
-}
-.sendbtn:hover { background: #FFBA40; transform: scale(1.06); }
-.sendbtn:disabled { opacity: 0.35; cursor: default; transform: none; }
-
-/* ─── SIDEBAR ─── */
-.sidebar {
-  width: 270px;
-  flex-shrink: 0;
-  overflow-y: auto;
-  padding: 16px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.sidebar::-webkit-scrollbar { width: 3px; }
-.sidebar::-webkit-scrollbar-thumb { background: var(--surface3); }
-.sb-card {
-  background: var(--surface);
-  border: 0.5px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-.sb-head {
-  font-family: var(--font-m);
-  font-size: 9px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-3);
-  padding: 9px 13px 8px;
-  border-bottom: 0.5px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.sb-body { padding: 11px 13px; }
-.empty-note { font-size: 12px; color: var(--text-3); font-style: italic; line-height: 1.5; }
-
-/* COACHING IN SIDEBAR */
-.ci { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 0.5px solid var(--border); }
-.ci:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
-.ci-type { font-family: var(--font-m); font-size: 9px; color: var(--amber); margin-bottom: 3px; }
-.ci-text { font-size: 12px; color: var(--text-2); line-height: 1.55; }
-
-/* PROBE IN SIDEBAR */
-.sb-probe {
-  background: var(--teal-soft);
-  border: 0.5px solid var(--teal-border);
-  border-radius: var(--radius);
-  padding: 10px 12px;
-  font-size: 12px;
-  color: var(--text-2);
-  cursor: pointer;
-  transition: all 0.15s;
-  line-height: 1.5;
-}
-.sb-probe:hover { background: rgba(43,196,162,0.15); }
-.sb-probe .pl { font-family: var(--font-m); font-size: 9px; color: var(--teal); display: block; margin-bottom: 4px; }
-
-/* COMMANDS */
-.cmd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-.cmdbtn {
-  background: var(--surface2);
-  border: 0.5px solid var(--border);
-  border-radius: 8px;
-  padding: 7px 9px;
-  font-family: var(--font-m);
-  font-size: 10px;
-  color: var(--text-2);
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.15s;
-  line-height: 1.3;
-}
-.cmdbtn em { display: block; font-style: normal; font-size: 9px; color: var(--text-3); font-family: var(--font); margin-top: 1px; }
-.cmdbtn:hover { border-color: var(--border-med); color: var(--text); background: var(--surface3); }
-
-/* SEGMENTS */
-.seg-row {
-  display: flex; align-items: center; gap: 7px;
-  padding: 6px 9px; border-radius: 8px;
-  cursor: pointer; transition: all 0.12s;
-  border: 0.5px solid transparent;
-}
-.seg-row:hover { background: var(--surface2); }
-.seg-row.active { background: var(--amber-soft); border-color: var(--amber-border); }
-.seg-row .sn { font-family: var(--font-m); font-size: 9px; color: var(--text-3); min-width: 28px; }
-.seg-row.active .sn { color: var(--amber); }
-.seg-row .st { font-size: 12px; color: var(--text-2); }
-.seg-row.active .st { color: var(--text); }
-.seg-row .sm { font-family: var(--font-m); font-size: 9px; color: var(--text-3); margin-left: auto; }
-
-/* PACING */
-.pac-row {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  padding: 5px 0; font-size: 11px;
-  border-bottom: 0.5px solid var(--border); gap: 8px;
-}
-.pac-row:last-child { border-bottom: none; }
-.pac-q { font-family: var(--font-m); font-size: 9px; color: var(--text-3); flex-shrink: 0; margin-top: 1px; }
-.pac-v { color: var(--text-2); line-height: 1.4; }
-
-/* ─── MODALS ─── */
-.overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.72);
-  display: none;
-  align-items: center; justify-content: center;
-  z-index: 200;
-}
-.overlay.open { display: flex; }
-.modal {
-  background: var(--surface);
-  border: 0.5px solid var(--amber-border);
-  border-radius: var(--radius-lg);
-  padding: 26px 28px;
-  width: 460px;
-  max-width: 94vw;
-  max-height: 88vh;
-  overflow-y: auto;
-}
-.modal-title {
-  font-family: var(--font-d);
-  font-size: 20px;
-  font-weight: 300;
-  color: var(--amber);
-  margin-bottom: 18px;
-}
-.flabel {
-  display: block;
-  font-family: var(--font-m);
-  font-size: 9px;
-  color: var(--text-3);
-  margin-bottom: 5px;
-  margin-top: 14px;
-}
-.flabel:first-of-type { margin-top: 0; }
-.finput {
-  width: 100%;
-  background: var(--surface2);
-  border: 0.5px solid var(--border-med);
-  border-radius: var(--radius);
-  padding: 9px 13px;
-  color: var(--text);
-  font-family: var(--font-m);
-  font-size: 12px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.finput:focus { border-color: var(--amber-border); }
-.fselect {
-  width: 100%;
-  background: var(--surface2);
-  border: 0.5px solid var(--border-med);
-  border-radius: var(--radius);
-  padding: 9px 13px;
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 13px;
-  outline: none;
-  cursor: pointer;
-  appearance: none;
-}
-.note-box {
-  background: var(--teal-soft);
-  border: 0.5px solid var(--teal-border);
-  border-radius: var(--radius);
-  padding: 11px 13px;
-  margin-top: 13px;
-  font-size: 12px;
-  color: var(--text-2);
-  line-height: 1.65;
-}
-.note-box strong { color: var(--teal); }
-.note-box a { color: var(--teal); text-decoration: none; font-size: 11px; font-family: var(--font-m); }
-.note-box a:hover { text-decoration: underline; }
-.modal-footer {
-  display: flex; justify-content: flex-end;
-  gap: 8px; margin-top: 20px;
-}
-.btn-p {
-  background: var(--amber); color: #0C0B08;
-  border: none; padding: 8px 18px;
-  border-radius: var(--radius);
-  font-size: 13px; cursor: pointer;
-  font-family: var(--font); font-weight: 500;
-}
-.btn-p:hover { background: #FFBA40; }
-.btn-s {
-  background: var(--surface2); color: var(--text-2);
-  border: 0.5px solid var(--border-med);
-  padding: 8px 18px; border-radius: var(--radius);
-  font-size: 13px; cursor: pointer; font-family: var(--font);
-}
-.btn-s:hover { background: var(--surface3); }
-
-/* CODE BLOCK */
-.code-block {
-  background: var(--surface2);
-  border: 0.5px solid var(--border-med);
-  border-radius: var(--radius);
-  padding: 13px;
-  font-family: var(--font-m);
-  font-size: 10.5px;
-  color: #7CC87C;
-  line-height: 1.75;
-  overflow-x: auto;
-  white-space: pre;
-  margin-top: 6px;
-}
-.filename-chip {
-  font-family: var(--font-m);
-  font-size: 10px;
-  color: var(--teal);
-  background: var(--teal-soft);
-  border: 0.5px solid var(--teal-border);
-  padding: 3px 10px;
-  border-radius: 6px;
-  display: inline-block;
-  margin-top: 14px;
-  margin-bottom: 6px;
-}
-
-/* ERROR TOAST */
-.toast {
-  position: fixed;
-  bottom: 82px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--red-soft);
-  border: 0.5px solid rgba(224,88,88,0.35);
-  color: #F08080;
-  padding: 9px 18px;
-  border-radius: var(--radius);
-  font-size: 12px;
-  font-family: var(--font-m);
-  display: none;
-  z-index: 100;
-  white-space: nowrap;
-  max-width: 90vw;
-  text-align: center;
-  white-space: normal;
-}
-
-@media (max-width: 700px) {
-  .sidebar { display: none; }
-  .topbar-mid { display: none; }
-}
-</style>
-</head>
-<body>
-
-<!-- TOPBAR -->
-<header class="topbar">
-  <div class="logo">Studio <em>/ Cognite</em></div>
-  <div class="topbar-mid">
-    <div class="seg-chip" id="segChip">Opening · 0–8 min</div>
-    <div class="mode-chip on" id="modeChip" onclick="toggleMode()">⚡ Coaching</div>
-  </div>
-  <div class="topbar-right">
-    <span class="tok" id="tokCount">~0 tokens</span>
-    <button class="tbtn" onclick="resetSession()">↺ Reset</button>
-    <button class="tbtn" onclick="openSettings()">⚙ Settings</button>
-  </div>
-</header>
-
-<!-- MAIN -->
-<div class="main">
-
-  <!-- CONVERSATION -->
-  <div class="conv">
-    <div class="scroll" id="scroll">
-      <div class="welcome" id="welcome">
-        <div class="welcome-icon">🎙️</div>
-        <h2>Studio is live.<br>Guru and Bill are ready.</h2>
-        <p>Choose a segment in the sidebar, then speak or type your first question.</p>
-        <div class="welcome-cmds">short &nbsp;·&nbsp; expand &nbsp;·&nbsp; probe &nbsp;·&nbsp; coach me &nbsp;·&nbsp; pace check &nbsp;·&nbsp; in character</div>
-      </div>
-    </div>
-
-    <!-- INPUT -->
-    <div class="inputbar">
-      <button class="mic" id="micBtn" onclick="toggleMic()" title="Click to speak">🎤</button>
-      <input class="textbox" id="txtIn" placeholder="Ask your question or type a command…" onkeydown="onKey(event)">
-      <div class="stat" id="statTxt"></div>
-      <button class="stopbtn" onclick="stopAll()" title="Stop">⏹</button>
-      <button class="sendbtn" id="sendBtn" onclick="send()">↑</button>
-    </div>
-  </div>
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-
-    <!-- COACHING -->
-    <div class="sb-card">
-      <div class="sb-head"><span>Coaching</span></div>
-      <div class="sb-body">
-        <div id="coachPanel" class="empty-note">Coaching notes appear here after your first question.</div>
-      </div>
-    </div>
-
-    <!-- PROBE -->
-    <div class="sb-card" id="probeSec" style="display:none">
-      <div class="sb-head"><span>💡 Follow-up probe</span></div>
-      <div class="sb-body">
-        <div class="sb-probe" id="sbProbe" onclick="useProbe()">
-          <span class="pl">CLICK TO USE ↗</span>
-          <span id="probeText"></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- COMMANDS -->
-    <div class="sb-card">
-      <div class="sb-head"><span>Commands</span></div>
-      <div class="sb-body">
-        <div class="cmd-grid">
-          <button class="cmdbtn" onclick="cmd('short')">short<em>tighten to ~45s</em></button>
-          <button class="cmdbtn" onclick="cmd('expand')">expand<em>go deeper +50%</em></button>
-          <button class="cmdbtn" onclick="cmd('probe')">probe<em>trigger follow-up</em></button>
-          <button class="cmdbtn" onclick="cmd('coach me')">coach me<em>detailed feedback</em></button>
-          <button class="cmdbtn" onclick="cmd('pace check')">pace check<em>session timing</em></button>
-          <button class="cmdbtn" onclick="toggleMode()">in character<em>drop coaching</em></button>
-        </div>
-      </div>
-    </div>
-
-    <!-- SEGMENTS -->
-    <div class="sb-card">
-      <div class="sb-head"><span>Segment</span></div>
-      <div class="sb-body" style="padding:8px 10px">
-        <div id="segList"></div>
-      </div>
-    </div>
-
-    <!-- PACING HISTORY -->
-    <div class="sb-card" id="pacSec" style="display:none">
-      <div class="sb-head"><span>Pacing history</span></div>
-      <div class="sb-body"><div id="pacList"></div></div>
-    </div>
-
-  </aside>
-</div>
-
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
-
-<!-- SETTINGS MODAL -->
-<div class="overlay" id="settingsOv">
-  <div class="modal">
-    <div class="modal-title">Settings</div>
-
-    <label class="flabel">GEMINI API KEY</label>
-    <input type="password" class="finput" id="keyIn" placeholder="AIza…" autocomplete="off">
-
-    <div class="note-box">
-      <strong>Netlify deployment:</strong> Set <code style="font-family:var(--font-m);font-size:10px;background:var(--surface3);padding:1px 5px;border-radius:4px;color:var(--teal)">GEMINI_API_KEY</code> as an environment variable and deploy the companion function — the app detects and calls it automatically. Without the function, paste your key above (localStorage only).<br><br>
-      <a href="#" onclick="showNetlify();return false;">View netlify/functions/gemini.js code →</a>
-    </div>
-
-    <label class="flabel">VOICE OUTPUT</label>
-    <select class="fselect" id="voiceOn">
-      <option value="true">Enabled — read responses aloud</option>
-      <option value="false">Disabled — text only</option>
-    </select>
-
-    <label class="flabel">GURU VOICE SPEED</label>
-    <input type="range" id="guruSpd" min="0.7" max="1.3" step="0.05" value="0.9"
-      style="width:100%;accent-color:var(--teal);margin-top:4px">
-
-    <label class="flabel">BILL VOICE SPEED</label>
-    <input type="range" id="billSpd" min="0.7" max="1.3" step="0.05" value="0.95"
-      style="width:100%;accent-color:var(--blue);margin-top:4px">
-
-    <div class="modal-footer">
-      <button class="btn-s" onclick="closeSettings()">Cancel</button>
-      <button class="btn-p" onclick="saveSettings()">Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- NETLIFY FUNCTION MODAL -->
-<div class="overlay" id="netlifyOv">
-  <div class="modal">
-    <div class="modal-title">Netlify Function Setup</div>
-    <p style="font-size:13px;color:var(--text-2);line-height:1.65;margin-bottom:14px">
-      Create this file alongside your <code style="font-family:var(--font-m);font-size:11px;background:var(--surface3);padding:1px 5px;border-radius:4px;color:var(--amber)">index.html</code> to proxy Gemini through a server-side env variable:
-    </p>
-    <div class="filename-chip">netlify/functions/gemini.js</div>
-    <div class="code-block">exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type'
-    }, body: '' };
-  }
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) return { statusCode: 500, body: 'GEMINI_API_KEY not set' };
-  const url = 'https://generativelanguage.googleapis.com/v1beta'
-    + '/models/gemini-2.0-flash:generateContent?key=' + key;
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: event.body
-  });
-  const d = await r.json();
-  return {
-    statusCode: r.status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*'
-    },
-    body: JSON.stringify(d)
+  const handlePrint = () => {
+    window.print();
   };
-};</div>
-    <p style="font-size:11px;color:var(--text-3);margin-top:12px;line-height:1.65">
-      Then: <strong style="color:var(--text-2)">Netlify dashboard → Site settings → Environment variables → Add GEMINI_API_KEY</strong>
-    </p>
-    <div class="modal-footer">
-      <button class="btn-p" onclick="closeNetlify()">Got it</button>
-    </div>
-  </div>
-</div>
 
-<script>
-// ══════════════════════════════════════════════════════════
-//  STATE
-// ══════════════════════════════════════════════════════════
-const S = {
-  apiKey:     localStorage.getItem('gk') || '',
-  voiceOn:    localStorage.getItem('vo') !== 'false',
-  guruSpd:    parseFloat(localStorage.getItem('gs') || '0.9'),
-  billSpd:    parseFloat(localStorage.getItem('bs') || '0.95'),
-  segment:    'seg1',
-  coaching:   true,
-  history:    [],
-  recording:  false,
-  processing: false,
-  speaking:   false,
-  voices:     [],
-  guruVoice:  null,
-  billVoice:  null,
-  lastProbe:  null,
-  tokens:     0,
-  pacing:     [],
-  qNum:       0,
-  rec:        null
+  return (
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-900 print:bg-white print:p-0">
+      {/* Floating Export Button */}
+      <div className="fixed bottom-8 right-8 z-50 no-print flex flex-col items-end gap-2">
+        {showTip && (
+          <div className="bg-slate-900 text-white text-[10px] px-3 py-1.5 rounded-lg shadow-xl mb-2 animate-bounce">
+            Tip: Enable "Background Graphics" in Print Settings
+          </div>
+        )}
+        <button 
+          onClick={handlePrint}
+          onMouseEnter={() => setShowTip(true)}
+          onMouseLeave={() => setShowTip(false)}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 font-bold transition-all transform hover:-translate-y-1 active:scale-95"
+        >
+          <Download size={20} />
+          Export Strategy PDF
+        </button>
+      </div>
+
+      <div className="max-w-6xl mx-auto bg-white shadow-xl rounded-2xl overflow-hidden border border-slate-200 print:shadow-none print:border-none">
+        {/* Header Section */}
+        <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+              <h1 className="text-3xl font-black italic tracking-tighter uppercase">Strategic Deal Risk Assessment</h1>
+              <div className="flex gap-2">
+                <span className="bg-red-500/20 text-red-300 border border-red-500/30 px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest">High Risk</span>
+                <span className="bg-blue-500/20 text-blue-300 border border-blue-500/30 px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest">S&OP Opportunity</span>
+              </div>
+            </div>
+            <p className="text-slate-400 font-medium max-w-2xl text-sm leading-relaxed">
+              Qualification dashboard for the VECV S&OP Revamp. Translating technical architectural gaps into commercial leverage and qualification hurdles.
+            </p>
+          </div>
+        </div>
+
+        {/* Executive Quick-View */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-0 border-b border-slate-200">
+          <StatCard title="Deal Anchor" value="RRS Logic" subtitle="Segmentation Accuracy" color="border-blue-500" />
+          <StatCard title="Major Risk" value="Ghost Demand" subtitle="Actuals Disconnect" color="border-red-500" />
+          <StatCard title="Upsell" value="Supplier Cap" subtitle="Phase 1 Expansion" color="border-emerald-500" />
+          <StatCard title="Qualification" value="Data Clean" subtitle="Master Data Prerequisite" color="border-amber-500" />
+        </div>
+
+        {/* Main Content Body */}
+        <div className="p-8 space-y-12">
+          
+          {/* Section: Deal Killers */}
+          <section>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-red-100 p-2 rounded-lg text-red-600"><AlertTriangle size={24} /></div>
+              <h2 className="text-xl font-extrabold uppercase tracking-tight">The "Deal Killers" (Structural Holes)</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <RiskCard 
+                title="The Execution-Planning Blindspot"
+                risk="System cannot see current production state."
+                impact="User will see double-orders in week 1. ROI on OTIF will vanish as planners lose trust."
+                stakeholder="PPC Lead & Plant Managers"
+                severity="Critical"
+              />
+              <RiskCard 
+                title="The 'Manual Automation' Paradox"
+                risk="Logic depends on human-maintained line mapping."
+                impact="If the client doesn't provide 2 dedicated FTEs for data maintenance, the system stalls."
+                stakeholder="IT & Master Data Team"
+                severity="High"
+              />
+            </div>
+          </section>
+
+          {/* Section: Upsell Bridges */}
+          <section>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600"><TrendingUp size={24} /></div>
+              <h2 className="text-xl font-extrabold uppercase tracking-tight text-emerald-900">Revenue Expansion Bridges (Weak Ties)</h2>
+            </div>
+            
+            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-6 relative overflow-hidden">
+              <div className="flex flex-col md:flex-row gap-8 relative z-10">
+                <div className="flex-1">
+                  <h4 className="font-bold text-emerald-800 mb-2 flex items-center gap-2">
+                    <Zap size={16} /> Supplier Commitment Workflow
+                  </h4>
+                  <p className="text-sm text-emerald-700 leading-relaxed italic">
+                    The document treats supplier capacity as a "static report." We can bridge this into a "Live Collaborative Portal" upsell.
+                  </p>
+                </div>
+                <div className="flex-1 border-l border-emerald-200 pl-8">
+                  <h4 className="font-bold text-emerald-800 mb-2 flex items-center gap-2">
+                    <FileText size={16} /> Strategic Data Managed Services
+                  </h4>
+                  <p className="text-sm text-emerald-700 leading-relaxed italic">
+                    Performance lags are deferred to Phase 2. We should sell a 3-year performance optimization retainer now.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Section: Qualification Scorecard */}
+          <section className="bg-slate-900 rounded-2xl p-8 text-white shadow-2xl relative">
+            <div className="absolute top-4 right-4 text-blue-500 opacity-20"><Target size={80} /></div>
+            <h2 className="text-2xl font-black italic mb-8 uppercase tracking-widest text-blue-400">Qualification Scorecard</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+              <div className="space-y-6">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <UserCheck size={16} /> Questions to Challenge the Buyer
+                </h3>
+                <ul className="space-y-4">
+                  <QuestionItem index="01" q="How will the S&OP plan be credible if it doesn't net-off actual rollouts in real-time?" />
+                  <QuestionItem index="02" q="Are you prepared to hire/allocate 2 people specifically for the manual FERT-line mapping maintenance?" />
+                  <QuestionItem index="03" q="Who is the 'Single Throat to Choke' when a Strategic FERT fails to trigger a safety stock override?" />
+                </ul>
+              </div>
+              <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <Info size={16} /> Sales Strategy Verdict
+                </h3>
+                <p className="text-sm font-light leading-loose text-slate-300 italic mb-4">
+                  This opportunity is <span className="text-red-400 font-bold">Fragile</span>. The technical architecture relies on a "Manual Maintenance" strong tie that contradicts the "Automation" sales hook. 
+                </p>
+                <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-lg">
+                  <p className="text-xs text-red-300 font-semibold">QUALIFICATION MANDATE:</p>
+                  <p className="text-[11px] text-red-200/70 mt-1 leading-relaxed italic">
+                    Do not submit final pricing until the client signs a "Data Readiness Agreement" or adds a "Data Cleansing" workstream to our scope.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <footer className="p-6 bg-slate-50 border-t border-slate-200 text-center">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Confidential Sales Strategy View — v3.0 (React/Print Optimized)</p>
+        </footer>
+      </div>
+    </div>
+  );
 };
 
-// ══════════════════════════════════════════════════════════
-//  SEGMENTS
-// ══════════════════════════════════════════════════════════
-const SEGS = [
-  { id:'seg1', name:'Opening',            time:'0–8 min',   qs:'Q1–3',   desc:'Cognite mission, Bill\'s career move, Guru\'s engineering arc' },
-  { id:'seg2', name:'Industrial AI',      time:'8–25 min',  qs:'Q4–8',   desc:'Industrial AI state of play, Cognite technology, customer value, 465% Forrester ROI' },
-  { id:'seg3', name:'Services & delivery',time:'25–40 min', qs:'Q9–12',  desc:'How Cognite delivers, what great services looks like, Bill\'s services vision' },
-  { id:'seg4', name:'India chapter',      time:'40–50 min', qs:'Q13–17', desc:'Bengaluru CoE, India\'s industrial digitisation, talent strategy, government engagement' },
-  { id:'seg5', name:'Supply chain',       time:'50–60 min', qs:'Q18–20', desc:'Industrial AI meets supply chain, Blue Yonder origins, post-pandemic resilience' }
-];
+const StatCard = ({ title, value, subtitle, color }) => (
+  <div className={`p-6 bg-white border-b md:border-b-0 md:border-r border-slate-100 last:border-r-0 ${color} border-t-0 border-l-0 border-r-0 md:border-b-4`}>
+    <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">{title}</p>
+    <h3 className="text-2xl font-bold text-slate-900 leading-tight">{value}</h3>
+    <p className="text-[10px] text-slate-500 font-medium mt-1 uppercase tracking-tight">{subtitle}</p>
+  </div>
+);
 
-// ══════════════════════════════════════════════════════════
-//  SYSTEM PROMPT
-// ══════════════════════════════════════════════════════════
-const SYS = `You are a professional podcast roleplay coach and dual character actor helping a HOST practise an upcoming interview.
+const RiskCard = ({ title, risk, impact, stakeholder, severity }) => (
+  <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col h-full hover:shadow-md transition-shadow">
+    <div className="flex justify-between items-start mb-4">
+      <h4 className="font-bold text-slate-900 italic leading-tight pr-4">{title}</h4>
+      <span className={`px-2 py-1 rounded text-[9px] font-black uppercase ${severity === 'Critical' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+        {severity}
+      </span>
+    </div>
+    <div className="space-y-3 flex-1">
+      <p className="text-xs text-slate-500"><span className="font-bold text-slate-700 uppercase tracking-tighter">The Gap:</span> {risk}</p>
+      <p className="text-xs text-slate-500"><span className="font-bold text-slate-700 uppercase tracking-tighter">Sale Impact:</span> {impact}</p>
+    </div>
+    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+      <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Pain Point Owner:</span>
+      <span className="text-[10px] text-slate-700 font-black italic">{stakeholder}</span>
+    </div>
+  </div>
+);
 
-CHARACTERS
+const QuestionItem = ({ index, q }) => (
+  <li className="flex gap-4 group">
+    <span className="text-blue-500 font-black text-lg opacity-40 group-hover:opacity-100 transition-opacity">{index}</span>
+    <p className="text-sm font-light text-slate-300 leading-relaxed group-hover:text-white transition-colors">{q}</p>
+  </li>
+);
 
-GURU = Guru Ananthanarayanan, Managing Director of Cognite India.
-Background: Mechanical engineer at Hyundai → VP & Country Lead Blue Yonder India → MD Cognite India. BITS Pilani master's in manufacturing. Building 100+ person Center of Excellence in Bengaluru (AI, ML, data science, services).
-Voice: Grounded, precise, India-proud. Opens with "So —". Uses concrete factory-floor examples. References India's industrial landscape. Practitioner energy — not just theory. Occasionally references his engineering roots.
-
-BILL = Bill Owen, Chief Services Officer at Cognite.
-Background: 30+ years enterprise software. Former Global CIO at Blue Yonder. Joined Cognite April 2025.
-Voice: Measured, globally experienced. Opens broader, lands on customer outcomes. Uses "what that means practically is…" Gravitas without jargon. Global lens, customer-first framing.
-
-COMPANY: Cognite — industrial AI software. NOT Cognizant (an IT services firm). Gently correct the host if they confuse the names.
-Key facts:
-- Mission: deliver $100 billion in customer value by 2035
-- Proof point: 465% ROI per Forrester study
-- Product: Cognite Data Fusion — unlocks, contextualises and operationalises industrial data at scale
-- Customers: energy majors, manufacturers, mining companies globally
-
-RESPONSE FORMAT
-Respond with ONLY a valid JSON object — no markdown fences, no preamble, no trailing text:
-{
-  "guru": "Guru's spoken answer (~150 words) in natural spoken English, or null",
-  "bill": "Bill's spoken answer (~150 words) in natural spoken English, or null",
-  "pacing": "One-line pacing assessment e.g. 'Guru: 90s ✓  Bill: 110s — slightly long'",
-  "probe": "One sharp follow-up the host could use, or null",
-  "coaching": "One concise coaching note about the host's question, or null"
-}
-
-ANSWER STYLE
-- Natural spoken English only — contractions, "—" for beats, real cadence
-- No bullet points inside answers — flowing speech
-- ~150 words per guest = ~90 seconds
-- Command modifiers: "short" → 60 words max; "expand" → 220 words; "in character" → set pacing/probe/coaching to null
-- "coach me" → detailed 3–4 sentence coaching in coaching field
-- "probe" → deliver last probe as if host asked it
-- "pace check" → session pacing summary in coaching field
-- Gently correct company name if host says "Cognizant"`;
-
-// ══════════════════════════════════════════════════════════
-//  API
-// ══════════════════════════════════════════════════════════
-async function callAPI(msg) {
-  S.history.push({ role:'user', parts:[{ text: msg }] });
-  const payload = {
-    system_instruction: { parts:[{ text: SYS }] },
-    contents: S.history,
-    generationConfig: { temperature: 0.85, maxOutputTokens: 2048 }
-  };
-
-  let data;
-
-  // 1. Try Netlify function (server-side key)
-  try {
-    const r = await fetch('/.netlify/functions/gemini', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
-    });
-    if (r.ok) data = await r.json();
-  } catch(_) {}
-
-  // 2. Direct API with localStorage key
-  if (!data) {
-    if (!S.apiKey) throw new Error('No API key — open Settings to add your Gemini key');
-    const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${S.apiKey}`,
-      { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }
-    );
-    if (!r.ok) {
-      const e = await r.json().catch(()=>({}));
-      throw new Error(e.error?.message || `API error ${r.status}`);
-    }
-    data = await r.json();
-  }
-
-  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-  const clean = raw.replace(/```json\n?|\n?```/g,'').trim();
-  const parsed = JSON.parse(clean);
-
-  S.history.push({ role:'model', parts:[{ text: clean }] });
-
-  // Token estimate (~4 chars/token)
-  const chars = S.history.reduce((n,m)=>n+(m.parts?.[0]?.text?.length||0),0) + SYS.length;
-  S.tokens = Math.round(chars/4);
-  document.getElementById('tokCount').textContent = `~${S.tokens.toLocaleString()} tokens`;
-
-  return parsed;
-}
-
-// ══════════════════════════════════════════════════════════
-//  VOICE RECOGNITION
-// ══════════════════════════════════════════════════════════
-function initRec() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return;
-  S.rec = new SR();
-  S.rec.lang = 'en-US';
-  S.rec.continuous = false;
-  S.rec.interimResults = true;
-  S.rec.onresult = e => {
-    document.getElementById('txtIn').value =
-      Array.from(e.results).map(r=>r[0].transcript).join('');
-  };
-  S.rec.onend = () => {
-    S.recording = false;
-    const b = document.getElementById('micBtn');
-    b.classList.remove('rec');
-    b.textContent = '🎤';
-    setStat('');
-    const v = document.getElementById('txtIn').value.trim();
-    if (v) send();
-  };
-  S.rec.onerror = e => {
-    if (e.error !== 'no-speech') showErr(`Mic: ${e.error}`);
-    S.recording = false;
-    const b = document.getElementById('micBtn');
-    b.classList.remove('rec');
-    b.textContent = '🎤';
-    setStat('');
-  };
-}
-
-function toggleMic() {
-  if (!S.rec) { showErr('Speech recognition not supported — use text input'); return; }
-  if (S.processing || S.speaking) return;
-  if (S.recording) {
-    S.rec.stop();
-  } else {
-    stopSpeak();
-    S.recording = true;
-    const b = document.getElementById('micBtn');
-    b.classList.add('rec');
-    b.textContent = '●';
-    setStat('Listening…');
-    document.getElementById('txtIn').value = '';
-    try { S.rec.start(); } catch(_) {}
-  }
-}
-
-// ══════════════════════════════════════════════════════════
-//  VOICE SYNTHESIS
-// ══════════════════════════════════════════════════════════
-function initVoices() {
-  const load = () => {
-    S.voices = speechSynthesis.getVoices();
-    const en = v => v.lang.startsWith('en');
-    S.guruVoice =
-      S.voices.find(v=>v.lang==='en-IN') ||
-      S.voices.find(v=>v.name.toLowerCase().includes('rishi')) ||
-      S.voices.find(v=>v.name.toLowerCase().includes('india')) ||
-      S.voices.find(en);
-    S.billVoice =
-      S.voices.find(v=>v.lang==='en-US' && ['alex','tom','daniel','fred','bruce','ryan','eric'].some(n=>v.name.toLowerCase().includes(n))) ||
-      S.voices.find(v=>v.lang==='en-US') ||
-      S.voices.find(v=>v.lang==='en-GB') ||
-      S.voices.find(en);
-  };
-  if (speechSynthesis.getVoices().length) load();
-  speechSynthesis.onvoiceschanged = load;
-}
-
-function speak(text, char, cb) {
-  if (!S.voiceOn || !text) { cb?.(); return; }
-  stopSpeak();
-  const u = new SpeechSynthesisUtterance(text);
-  u.voice  = char==='guru' ? S.guruVoice : S.billVoice;
-  u.rate   = char==='guru' ? S.guruSpd  : S.billSpd;
-  u.pitch  = char==='guru' ? 1.05 : 0.95;
-  u.volume = 1;
-  S.speaking = true;
-  setStat(char==='guru' ? '▶ Guru speaking…' : '▶ Bill speaking…');
-  u.onend = u.onerror = () => { S.speaking=false; setStat(''); cb?.(); };
-  speechSynthesis.speak(u);
-}
-
-function speakSeq(items, i=0) {
-  if (i>=items.length) { clearWaves(); return; }
-  const { text, char, el } = items[i];
-  addWave(el);
-  speak(text, char, () => { clearWave(el); speakSeq(items, i+1); });
-}
-
-function stopSpeak() {
-  speechSynthesis.cancel();
-  S.speaking = false;
-  clearWaves();
-  setStat('');
-}
-
-function addWave(el) {
-  if (!el) return;
-  const w = document.createElement('span');
-  w.className='wave';
-  w.innerHTML='<span></span><span></span><span></span><span></span><span></span>';
-  el?.querySelector('.slabel')?.appendChild(w);
-}
-function clearWave(el) { el?.querySelectorAll('.wave').forEach(e=>e.remove()); }
-function clearWaves() { document.querySelectorAll('.wave').forEach(e=>e.remove()); }
-
-// ══════════════════════════════════════════════════════════
-//  SEND
-// ══════════════════════════════════════════════════════════
-async function send() {
-  const box = document.getElementById('txtIn');
-  const msg = box.value.trim();
-  if (!msg || S.processing) return;
-  box.value = '';
-  stopSpeak();
-
-  // hide welcome
-  const w = document.getElementById('welcome');
-  if (w) w.style.display='none';
-
-  addMsg('host', msg);
-  S.processing = true;
-  setBusy(true);
-  setStat('Thinking…');
-  const proc = addProc();
-
-  try {
-    const resp = await callAPI(msg);
-    proc.remove();
-
-    const queue = [];
-    if (resp.guru) { const el=addMsg('guru', resp.guru); queue.push({text:resp.guru, char:'guru', el}); }
-    if (resp.bill) { const el=addMsg('bill', resp.bill); queue.push({text:resp.bill, char:'bill', el}); }
-
-    if (S.coaching) {
-      if (resp.coaching) addCoach(resp.coaching);
-      if (resp.probe)    { addProbeInline(resp.probe); S.lastProbe=resp.probe; showProbe(resp.probe); }
-      else               showProbe(null);
-      updateCoachPanel(resp.coaching, resp.pacing);
-      if (resp.pacing) {
-        S.pacing.push({ q:`Q${++S.qNum}`, note:resp.pacing });
-        updatePacingPanel();
-      }
-    }
-
-    if (queue.length) speakSeq(queue); else setStat('');
-    scrollDown();
-
-  } catch(e) {
-    proc.remove();
-    showErr(e.message);
-  } finally {
-    S.processing = false;
-    setBusy(false);
-  }
-}
-
-function cmd(c) { document.getElementById('txtIn').value=c; send(); }
-function useProbe() { if (S.lastProbe) { document.getElementById('txtIn').value=S.lastProbe; send(); } }
-
-// ══════════════════════════════════════════════════════════
-//  DOM BUILDERS
-// ══════════════════════════════════════════════════════════
-function addMsg(role, text) {
-  const sc = document.getElementById('scroll');
-  const d  = document.createElement('div');
-  d.className = `msg ${role}`;
-  const init  = role==='host'?'YOU':role==='guru'?'GA':'BO';
-  const label = role==='host'?'HOST':role==='guru'?'Guru →':'Bill →';
-  d.innerHTML = `<div class="av ${role}">${init}</div><div class="bubble ${role}"><div class="slabel ${role}">${label}</div><div class="btext">${esc(text)}</div></div>`;
-  sc.appendChild(d);
-  scrollDown();
-  return d;
-}
-
-function addCoach(text) {
-  const sc = document.getElementById('scroll');
-  const d  = document.createElement('div');
-  d.className='coach-callout';
-  d.innerHTML=`<span class="clabel">🎙️ COACH</span>${esc(text)}`;
-  sc.appendChild(d);
-  scrollDown();
-}
-
-function addProbeInline(text) {
-  const sc = document.getElementById('scroll');
-  const d  = document.createElement('div');
-  d.className='probe-callout';
-  d.innerHTML=`<span style="font-size:14px">💡</span><div><span class="plabel">PROBE — click to ask</span>${esc(text)}</div>`;
-  d.onclick = () => { document.getElementById('txtIn').value=text; send(); };
-  sc.appendChild(d);
-  scrollDown();
-}
-
-function addProc() {
-  const sc = document.getElementById('scroll');
-  const d  = document.createElement('div');
-  d.className='msg';
-  d.innerHTML=`<div class="av guru" style="opacity:.4">GA</div><div class="bubble guru" style="opacity:.55"><div class="slabel guru">Processing</div><div class="dots"><span></span><span></span><span></span></div></div>`;
-  sc.appendChild(d);
-  scrollDown();
-  return d;
-}
-
-function updateCoachPanel(coaching, pacing) {
-  const p = document.getElementById('coachPanel');
-  const items=[];
-  if (pacing)   items.push({ type:'PACING', text:pacing });
-  if (coaching) items.push({ type:'HOST NOTE', text:coaching });
-  if (!items.length) { p.innerHTML='<div class="empty-note">No coaching notes for this exchange.</div>'; return; }
-  p.innerHTML = items.map(i=>`<div class="ci"><div class="ci-type">${i.type}</div><div class="ci-text">${esc(i.text)}</div></div>`).join('');
-}
-
-function showProbe(text) {
-  const sec=document.getElementById('probeSec');
-  if (!text) { sec.style.display='none'; return; }
-  sec.style.display='block';
-  document.getElementById('probeText').textContent=text;
-}
-
-function updatePacingPanel() {
-  const sec=document.getElementById('pacSec');
-  const lst=document.getElementById('pacList');
-  if (!S.pacing.length) { sec.style.display='none'; return; }
-  sec.style.display='block';
-  lst.innerHTML=S.pacing.slice(-6).reverse()
-    .map(p=>`<div class="pac-row"><span class="pac-q">${p.q}</span><span class="pac-v">${esc(p.note)}</span></div>`).join('');
-}
-
-function buildSegList() {
-  document.getElementById('segList').innerHTML = SEGS.map(s=>`
-    <div class="seg-row ${s.id===S.segment?'active':''}" onclick="pickSeg('${s.id}')">
-      <span class="sn">${s.qs}</span><span class="st">${s.name}</span><span class="sm">${s.time}</span>
-    </div>`).join('');
-}
-
-function pickSeg(id) {
-  S.segment = id;
-  const seg = SEGS.find(s=>s.id===id);
-  document.getElementById('segChip').textContent = `${seg.name} · ${seg.time}`;
-  buildSegList();
-  // Prime history with segment context
-  S.history.push({ role:'user', parts:[{ text:`We are now practicing the ${seg.name} segment (${seg.qs}, ${seg.time}). Context: ${seg.desc}.` }] });
-  S.history.push({ role:'model', parts:[{ text: JSON.stringify({guru:null,bill:null,pacing:null,probe:null,coaching:`Ready for ${seg.name} segment.`}) }] });
-}
-
-// ══════════════════════════════════════════════════════════
-//  UTILS
-// ══════════════════════════════════════════════════════════
-function scrollDown() { const s=document.getElementById('scroll'); setTimeout(()=>s.scrollTop=s.scrollHeight,40); }
-function setStat(t)   { document.getElementById('statTxt').textContent=t; }
-function setBusy(b)   { document.getElementById('sendBtn').disabled=b; }
-function esc(s)       { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>'); }
-function onKey(e)     { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} }
-function stopAll()    { stopSpeak(); if(S.recording&&S.rec)S.rec.stop(); }
-
-function showErr(msg) {
-  const t=document.getElementById('toast');
-  t.textContent=msg;
-  t.style.display='block';
-  setTimeout(()=>t.style.display='none',4500);
-}
-
-function toggleMode() {
-  S.coaching=!S.coaching;
-  const c=document.getElementById('modeChip');
-  c.textContent = S.coaching ? '⚡ Coaching' : '🎭 In character';
-  c.className   = 'mode-chip' + (S.coaching ? ' on' : '');
-}
-
-function resetSession() {
-  if(!confirm('Reset session? Conversation history will be cleared.')) return;
-  S.history=[]; S.lastProbe=null; S.tokens=0; S.pacing=[]; S.qNum=0;
-  document.getElementById('tokCount').textContent='~0 tokens';
-  document.getElementById('scroll').innerHTML=`<div class="welcome" id="welcome">
-    <div class="welcome-icon">🎙️</div>
-    <h2>Studio is live.<br>Guru and Bill are ready.</h2>
-    <p>Choose a segment in the sidebar, then speak or type your first question.</p>
-    <div class="welcome-cmds">short &nbsp;·&nbsp; expand &nbsp;·&nbsp; probe &nbsp;·&nbsp; coach me &nbsp;·&nbsp; pace check &nbsp;·&nbsp; in character</div>
-  </div>`;
-  document.getElementById('coachPanel').innerHTML='<div class="empty-note">Coaching notes appear here after your first question.</div>';
-  showProbe(null);
-  document.getElementById('pacSec').style.display='none';
-  buildSegList();
-  // Re-prime
-  S.history.push({ role:'user',  parts:[{ text:'We are starting with the Opening segment (Q1–3, 0–8 min). Ready to begin.' }] });
-  S.history.push({ role:'model', parts:[{ text: JSON.stringify({guru:null,bill:null,pacing:null,probe:null,coaching:null}) }] });
-}
-
-// ══════════════════════════════════════════════════════════
-//  SETTINGS
-// ══════════════════════════════════════════════════════════
-function openSettings() {
-  document.getElementById('keyIn').value   = S.apiKey;
-  document.getElementById('voiceOn').value = S.voiceOn.toString();
-  document.getElementById('guruSpd').value = S.guruSpd;
-  document.getElementById('billSpd').value = S.billSpd;
-  document.getElementById('settingsOv').classList.add('open');
-}
-function closeSettings() { document.getElementById('settingsOv').classList.remove('open'); }
-function saveSettings() {
-  S.apiKey   = document.getElementById('keyIn').value.trim();
-  S.voiceOn  = document.getElementById('voiceOn').value==='true';
-  S.guruSpd  = parseFloat(document.getElementById('guruSpd').value);
-  S.billSpd  = parseFloat(document.getElementById('billSpd').value);
-  localStorage.setItem('gk', S.apiKey);
-  localStorage.setItem('vo', S.voiceOn);
-  localStorage.setItem('gs', S.guruSpd);
-  localStorage.setItem('bs', S.billSpd);
-  closeSettings();
-}
-function showNetlify() { closeSettings(); document.getElementById('netlifyOv').classList.add('open'); }
-function closeNetlify() { document.getElementById('netlifyOv').classList.remove('open'); }
-
-// Close overlays on backdrop click
-document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
-
-// ══════════════════════════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════════════════════════
-(function init() {
-  buildSegList();
-  initRec();
-  initVoices();
-
-  // Prime conversation with opening segment context
-  S.history.push({ role:'user',  parts:[{ text:'We are starting with the Opening segment (Q1–3, 0–8 min). Context: Cognite mission, Bill\'s career move, Guru\'s engineering arc. The host will now ask questions.' }] });
-  S.history.push({ role:'model', parts:[{ text: JSON.stringify({guru:null,bill:null,pacing:null,probe:null,coaching:null}) }] });
-
-  // Show key prompt if no key detected and not on Netlify
-  if (!S.apiKey && !location.hostname.includes('netlify')) {
-    setTimeout(()=>showErr('No API key detected — open Settings to add your Gemini key'),1200);
-  }
-})();
-</script>
-</body>
-</html>
+export default App;
